@@ -208,3 +208,10 @@ __marimo__/
 
 # JSON stuff
 *.json
+
+
+#Python env variables
+venv/
+__pycache__/
+data/
+*.env
