@@ -12,3 +12,4 @@ six==1.17.0
 tzdata==2025.3
 urllib3==2.6.2
 xmltodict==1.0.2
+google-cloud-bigquery[pandas]==3.38.0

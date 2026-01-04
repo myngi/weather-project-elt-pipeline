@@ -1,67 +1,59 @@
-{
- "cells": [
-  {
-   "cell_type": "code",
-   "execution_count": 2,
-   "id": "fd37ad90",
-   "metadata": {},
-   "outputs": [
-    {
-     "data": {
-      "text/plain": [
-       "{'timestamp': '2025-12-02 12:20:00+00:00',\n",
-       " 'location': 'Oulu Vihreäsaari satama',\n",
-       " 'source': 'FMI',\n",
-       " 'latitude': 65.00637,\n",
-       " 'longitude': 25.39325,\n",
-       " 'temperature': -0.1}"
-      ]
-     },
-     "execution_count": 2,
-     "metadata": {},
-     "output_type": "execute_result"
-    }
-   ],
-   "source": [
-    "import pandas as pd\n",
-    "import fmi_weather_client as fmi\n",
-    "\n",
-    "FMISID = 101794 #Example, OUlu, Vihreäsaaro\n",
-    "weather = fmi.observation_by_station_id(FMISID)\n",
-    "if weather is not None:\n",
-    "    message = {\n",
-    "    \"timestamp\": str(pd.to_datetime(weather.data.time)),\n",
-    "    \"location\": weather.place,\n",
-    "    \"source\": \"FMI\",\n",
-    "    'latitude': weather.lat,\n",
-    "    'longitude': weather.lon,\n",
-    "    \"temperature\": weather.data.temperature.value\n",
-    "    }\n",
-    "     \n",
-    "\n",
-    "message\n"
-   ]
-  }
- ],
- "metadata": {
-  "kernelspec": {
-   "display_name": "Python 3",
-   "language": "python",
-   "name": "python3"
-  },
-  "language_info": {
-   "codemirror_mode": {
-    "name": "ipython",
-    "version": 3
-   },
-   "file_extension": ".py",
-   "mimetype": "text/x-python",
-   "name": "python",
-   "nbconvert_exporter": "python",
-   "pygments_lexer": "ipython3",
-   "version": "3.12.3"
-  }
- },
- "nbformat": 4,
- "nbformat_minor": 5
-}
+import json
+import time
+import pandas as pd
+import fmi_weather_client as fmi
+from confluent_kafka import Producer
+
+# Kafka Configuration
+config = {'bootstrap.servers': 'localhost:9092'}
+producer = Producer(config)
+
+# Target stations
+STATION_IDS = [101185, 100971, 102006, 100968, 100683]
+TOPIC = 'weather_data'
+
+# Callback for delivery reports
+def delivery_report(err, msg):
+    if err is not None:
+        print(f"Message delivery failed: {err}")
+    else:
+        print(f"Message delivered to {msg.topic()} [{msg.partition()}]")
+
+print(f"Starting Kafka Producer. Sending to topic: {TOPIC}")
+
+# Continuous extraction and production loop
+try:
+    while True:
+        for fmisid in STATION_IDS:
+            try:
+                weather = fmi.observation_by_station_id(fmisid)
+                if weather is not None:
+                    # Logic for creating the message dictionary
+                    message = {
+                        "timestamp": str(pd.to_datetime(weather.data.time)),
+                        "location": weather.place,
+                        "source": "FMI",
+                        "latitude": weather.lat,
+                        "longitude": weather.lon,
+                        "temperature": weather.data.temperature.value
+                    }
+                    
+                    # Send to Kafka
+                    producer.produce(
+                        TOPIC, 
+                        key=str(fmisid), 
+                        value=json.dumps(message), 
+                        callback=delivery_report
+                    )
+                    # flush ensures the message is sent before continuing
+                    producer.flush() 
+                    
+            except Exception as e:
+                print(f"Error fetching station {fmisid}: {e}")
+        
+        print("Batch complete. Waiting 10 minutes for next FMI update...")
+        time.sleep(600) 
+
+# Graceful shutdown on interrupt
+except KeyboardInterrupt:
+    print("Producer stopped.")
