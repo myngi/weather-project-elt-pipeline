@@ -15,7 +15,7 @@ default_args = {
 with DAG(
     dag_id="weather_deduplication",
     start_date=datetime(2026, 1, 1),
-    schedule=None,
+    schedule='*/10 * * * *',  # Every 10 minutes
     catchup=False,
 ) as dag:
 
