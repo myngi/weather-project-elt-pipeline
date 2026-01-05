@@ -2,6 +2,7 @@ import streamlit as st
 from google.cloud import bigquery
 import pandas as pd
 from datetime import datetime, timedelta
+import json
 
 # Streamlit Page Configuration
 st.set_page_config(page_title="FMI Weather Analytics", layout="wide", page_icon="🌡️")
@@ -10,7 +11,13 @@ st.title("🌡️ FMI Real-Time Weather Analytics")
 st.markdown("---")
 
 # 1. Connection & Data Loading
-client = bigquery.Client.from_service_account_json("config/gcp-service-account.json")
+if "gcp_service_account" in st.secrets:
+    # Deployed: Use Streamlit secrets
+    credentials_dict = json.loads(st.secrets["gcp_service_account"])
+    client = bigquery.Client.from_service_account_info(credentials_dict)
+else:
+    # Local Development: Use local service account file
+    client = bigquery.Client.from_service_account_json("config/gcp-service-account.json")
 
 @st.cache_data(ttl=600)
 def load_data():
