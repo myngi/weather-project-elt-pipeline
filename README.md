@@ -1,4 +1,8 @@
+
 # 🌡️ FMI Weather Data ELT Pipeline
+
+
+🔗 **[Live Dashboard Link](https://myngi-weather-project-elt-pipeline-dashboard-3q7wrd.streamlit.app/)**
 
 This project demonstrates an end-to-end ELT (Extract, Load, Transform) pipeline that collects real-time weather observations from the Finnish Meteorological Institute (FMI) and visualizes them on an interactive dashboard.
 
