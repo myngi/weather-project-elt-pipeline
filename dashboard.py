@@ -1,7 +1,6 @@
 import streamlit as st
 from google.cloud import bigquery
 import pandas as pd
-from datetime import datetime, timedelta
 import json
 
 # Streamlit Page Configuration
@@ -12,38 +11,36 @@ st.markdown("---")
 
 # 1. Connection & Data Loading
 if "gcp_service_account" in st.secrets:
-    # This part handles the Streamlit Cloud deployment
     credentials_info = json.loads(st.secrets["gcp_service_account"])
     client = bigquery.Client.from_service_account_info(credentials_info)
 else:
-    # This part handles your local machine (CSC instance)
     client = bigquery.Client.from_service_account_json("config/gcp-service-account.json")
 
 @st.cache_data(ttl=600)
 def load_data():
+    # FIX: Added humidity and wind_speed to the SELECT statement
     query = """
     SELECT 
         timestamp, 
         location AS station_name, 
-        temperature 
+        temperature,
+        humidity,
+        wind_speed
     FROM `data-analysis-project-478421.weather_data.cleaned_observations` 
     ORDER BY timestamp DESC
     """
     data = client.query(query).to_dataframe()
-    # Ensure timestamp is in datetime format
     data['timestamp'] = pd.to_datetime(data['timestamp'])
     return data
 
 df = load_data()
 
-# 2. Sidebar for Controls (The "Selection of Time")
+# 2. Sidebar for Controls
 st.sidebar.header("Dashboard Controls")
 
-# Time Range Slider
 min_date = df['timestamp'].min().to_pydatetime()
 max_date = df['timestamp'].max().to_pydatetime()
 
-# Allow user to pick a start and end time
 time_range = st.sidebar.slider(
     "Select Time Range",
     min_value=min_date,
@@ -52,7 +49,6 @@ time_range = st.sidebar.slider(
     format="DD/MM HH:mm"
 )
 
-# Station Selection
 all_stations = df['station_name'].unique()
 selected_stations = st.sidebar.multiselect(
     "Filter Stations", 
@@ -67,7 +63,7 @@ filtered_df = df[
     (df['station_name'].isin(selected_stations))
 ]
 
-# 3. Top-Level Metrics (KPI Cards)
+# 3. Top-Level Metrics
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.metric("Total Rows", len(filtered_df))
@@ -81,26 +77,28 @@ with col4:
 st.markdown("---")
 
 # 4. Visualizations
-row2_col1, row2_col2 = st.columns([2, 1])
+if not filtered_df.empty:
+    # Temperature Chart (Top)
+    st.subheader("Temperature Trends (°C)")
+    temp_chart = filtered_df.pivot_table(index='timestamp', columns='station_name', values='temperature')
+    st.line_chart(temp_chart)
 
-with row2_col1:
-    st.subheader("Temperature Trends")
-    if not filtered_df.empty:
-        # Pivot the data so it works with st.line_chart
-        chart_data = filtered_df.pivot_table(
-            index='timestamp', 
-            columns='station_name', 
-            values='temperature'
-        )
-        st.line_chart(chart_data)
-    else:
-        st.warning("No data found for the selected filters.")
+    # Humidity and Wind Charts (Side-by-Side)
+    col_a, col_b = st.columns(2)
+    
+    with col_a:
+        st.subheader("Relative Humidity (%)")
+        # FIX: Used 'station_name' to match the SQL alias
+        humidity_chart = filtered_df.pivot_table(index='timestamp', columns='station_name', values='humidity')
+        st.line_chart(humidity_chart)
 
-with row2_col2:
-    st.subheader("Station Distribution")
-    # Show a simple bar chart of records per station
-    station_counts = filtered_df['station_name'].value_counts()
-    st.bar_chart(station_counts)
+    with col_b:
+        st.subheader("Wind Speed (m/s)")
+        # FIX: Used 'station_name' to match the SQL alias
+        wind_chart = filtered_df.pivot_table(index='timestamp', columns='station_name', values='wind_speed')
+        st.line_chart(wind_chart)
+else:
+    st.warning("No data found for the selected filters.")
 
 # 5. Raw Data Table
 with st.expander("View Raw Processed Data"):
