@@ -4,11 +4,12 @@ import json
 import os
 import pandas as pd
 
+# Update with your correct path
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "config/gcp-service-account.json"
 
 conf = {
     'bootstrap.servers': "127.0.0.1:9092",
-    'group.id': "weather_sandbox_fix_v1", # New group to try again
+    'group.id': "weather_sandbox_fix_v1", 
     'auto.offset.reset': 'earliest' 
 }
 
@@ -33,11 +34,20 @@ try:
         if len(records) >= 20:
             df = pd.DataFrame(records)
             
-            
-            # converting 'timestamp' to datetime
+            # Essential: Convert 'timestamp' to datetime objects for BigQuery
             df['timestamp'] = pd.to_datetime(df['timestamp'])
             
-            job = bq_client.load_table_from_dataframe(df, table_id)
+            # Configure the load job to allow schema updates
+            job_config = bigquery.LoadJobConfig(
+                schema_update_options=[
+                    bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION
+                ],
+                # WRITE_APPEND adds new data to the existing table
+                write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
+            )
+            
+            # Load the DataFrame with the job_config enabled
+            job = bq_client.load_table_from_dataframe(df, table_id, job_config=job_config)
             job.result() 
             
             print(f"✅ Successfully batch-loaded {len(records)} rows to BigQuery.")

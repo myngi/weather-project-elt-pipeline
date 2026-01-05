@@ -1,0 +1,9 @@
+[2m2026-01-05T19:14:23.840995Z[0m [[32m[1minfo     [0m] [1mStarting log server on http://[::]:8794[0m [[0m[1m[34mairflow.utils.serve_logs.core[0m][0m [36mloc[0m=[35mcore.py:50[0m
+WARNING:  ASGI app factory detected. Using it, but please consider setting the --factory flag explicitly.
+INFO:     Started server process [158857]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 98] error while attempting to bind on address ('0.0.0.0', 8794): address already in use
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+[1;33m/home/ubuntu/fmi_weather_project/venv/lib/python3.12/site-packages/airflow/sdk/execution_time/[0m[1;33msupervisor.py[0m[1;33m:[0m[1;33m477[0m[1;33m DeprecationWarning[0m[33m: This process [0m[1;33m([0m[33mpid[0m[33m=[0m[1;33m158856[0m[1;33m)[0m[33m is multi-threaded, use of [0m[1;33mfork[0m[1;33m([0m[1;33m)[0m[33m may lead to deadlocks in the child.[0m

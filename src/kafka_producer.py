@@ -35,7 +35,9 @@ try:
                         "source": "FMI",
                         "latitude": weather.lat,
                         "longitude": weather.lon,
-                        "temperature": weather.data.temperature.value
+                        "temperature": weather.data.temperature.value,
+                        "humidity": weather.data.humidity.value if hasattr(weather.data, 'humidity') else None,
+                        "wind_speed": weather.data.wind_speed.value if hasattr(weather.data, 'wind_speed') else None
                     }
                     
                     # Send to Kafka
