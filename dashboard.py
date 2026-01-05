@@ -12,11 +12,11 @@ st.markdown("---")
 
 # 1. Connection & Data Loading
 if "gcp_service_account" in st.secrets:
-    # Deployed: Use Streamlit secrets
-    credentials_dict = json.loads(st.secrets["gcp_service_account"])
-    client = bigquery.Client.from_service_account_info(credentials_dict)
+    # This part handles the Streamlit Cloud deployment
+    credentials_info = json.loads(st.secrets["gcp_service_account"])
+    client = bigquery.Client.from_service_account_info(credentials_info)
 else:
-    # Local Development: Use local service account file
+    # This part handles your local machine (CSC instance)
     client = bigquery.Client.from_service_account_json("config/gcp-service-account.json")
 
 @st.cache_data(ttl=600)
